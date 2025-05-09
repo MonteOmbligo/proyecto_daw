@@ -32,12 +32,11 @@ export const blogService = {
     const response = await axios.get(`http://localhost:3001/api/usuarios/${userId}/blogs`);
     return response.data;
   },
-
   /**
    * Crear un nuevo blog
    * @param blog Datos del nuevo blog
    */
-  createBlog: async (blog: Blog) => {
+  createBlog: async (blog: Omit<Blog, 'id'>) => {
     const response = await axios.post('http://localhost:3001/api/blogs', blog);
     return response.data;
   },
