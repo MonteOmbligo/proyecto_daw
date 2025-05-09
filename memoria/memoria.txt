@@ -1,0 +1,206 @@
+# MEMORIA DEL PROYECTO
+/////////////////////////////////////
+#PASSWORD APLICATION AUDITIVO:  
+YcYX xq7G EvCI egVF qVZ3 1xZ6
+
+WordPress genera y valida las contraseñas de aplicación con los espacios incluidos. No elimines los espacios ni los reemplaces por otros caracteres.
+///////////////////////////
+
+## Estructura del Proyecto
+El proyecto está organizado en tres carpetas principales:
+- `client`: Contiene la aplicación frontend desarrollada con Next.js
+- `server`: Contiene la API backend desarrollada con Node.js y Express
+- `memoria`: Contiene este documento de memoria del proyecto
+
+## Layout del Proyecto
+
+### Frontend (client)
+La estructura del frontend sigue el patrón de organización de Next.js:
+- `public/`: Archivos estáticos como imágenes y SVGs
+- `src/app/`: Componentes y páginas de la aplicación
+  - `layout.tsx`: Define la estructura común para todas las páginas
+  - `page.tsx`: Página principal de la aplicación
+- Archivos de configuración: next.config.ts, tsconfig.json, etc.
+
+### Backend (server)
+La estructura del backend sigue una organización modular:
+- `index.js`: Punto de entrada de la aplicación con rutas y configuración del servidor
+- `config/`: Archivos de configuración
+  - `db.js`: Configuración de la conexión a la base de datos MySQL
+- `models/`: Modelos de datos y lógica de negocio
+  - `db.init.js`: Script para inicializar las tablas de la base de datos
+  - `usuario.model.js`: Modelo para operaciones CRUD de usuarios
+  - `blog.model.js`: Modelo para operaciones CRUD de blogs
+
+## Base de Datos
+
+### Diseño de la Base de Datos
+Se ha implementado una base de datos relacional en MySQL con las siguientes tablas:
+
+1. **Tabla de Usuarios (`usuarios`)**:
+   - `id`: Identificador único de cada usuario.
+   - `nombre`: Nombre del usuario.
+   - `email`: Correo electrónico único del usuario.
+   - `contraseña`: Contraseña almacenada de forma segura mediante hash.
+   - `estilo_escritura`: Preferencia de estilo de escritura del usuario.
+   - `fecha_creacion` y `fecha_actualizacion`: Tiempos de creación y última actualización del registro.
+
+2. **Tabla de Blogs (`blogs`)**:
+   - `id`: Identificador único de cada blog.
+   - `nombre`: Nombre del blog.
+   - `api_url`: URL de la API asociada al blog.
+   - `favicon`: URL del favicon del blog.
+   - `palabras_clave`: Palabras clave asociadas al blog.
+   - `tematica`: Temática del blog.
+   - `usuario_id`: Identificador del usuario propietario del blog.
+   - `fecha_creacion` y `fecha_actualizacion`: Tiempos de creación y última actualización del registro.
+
+### Relaciones
+- Un usuario puede tener múltiples blogs (relación uno a muchos).
+- Cada blog pertenece a un único usuario.
+
+### Implementación de la Base de Datos
+
+#### Función del Código
+- **Conexión a la Base de Datos**: Configura un pool de conexiones para interactuar con MySQL de manera eficiente.
+- **Inicialización de Tablas**: Crea las tablas `usuarios` y `blogs` si no existen, asegurando la integridad referencial mediante claves foráneas.
+- **Operaciones CRUD**: Proporciona métodos para crear, leer, actualizar y eliminar registros en ambas tablas.
+
+#### Librerías y Tecnologías Utilizadas
+- **mysql2**: Para la conexión y operaciones con la base de datos MySQL. Se eligió por su soporte para promesas y su eficiencia en la gestión de conexiones.
+- **dotenv**: Para gestionar variables de entorno, lo que permite mantener seguras las credenciales de la base de datos.
+- **bcryptjs**: Para encriptar contraseñas, garantizando la seguridad de los datos sensibles de los usuarios.
+
+#### Justificación de las Tecnologías
+- **MySQL**: Base de datos relacional ampliamente utilizada, ideal para manejar relaciones entre tablas como usuarios y blogs.
+- **mysql2**: Ofrece un rendimiento mejorado y soporte para promesas, lo que facilita la escritura de código asincrónico.
+- **dotenv**: Simplifica la configuración del entorno, permitiendo cambiar credenciales sin modificar el código fuente.
+- **bcryptjs**: Proporciona un método seguro para almacenar contraseñas, protegiendo contra ataques de fuerza bruta.
+
+### Archivo de Configuración
+Se creó un archivo de variables de entorno (`.env`) para almacenar las credenciales de la base de datos de forma segura:
+```
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=****
+DB_NAME=blog_app
+DB_PORT=3306
+```
+
+### Inicialización de la Base de Datos
+El script de inicialización (`db.init.js`) crea automáticamente la base de datos y las tablas si no existen, con las siguientes características:
+- Creación de tablas con restricciones de integridad referencial
+- Campos para fechas de creación y actualización automáticas
+- Claves foráneas con eliminación en cascada para mantener la integridad de los datos
+
+### API RESTful
+
+#### Función del Código
+- **Gestión de Usuarios**: Permite registrar, listar, actualizar y eliminar usuarios.
+- **Gestión de Blogs**: Permite registrar, listar, actualizar y eliminar blogs, además de asociarlos a usuarios específicos.
+
+#### Endpoints Implementados
+- **Usuarios**:
+  - `POST /api/usuarios`: Crear un nuevo usuario.
+  - `GET /api/usuarios`: Listar todos los usuarios.
+  - `GET /api/usuarios/:id`: Obtener un usuario específico por ID.
+  - `PUT /api/usuarios/:id`: Actualizar un usuario existente.
+  - `DELETE /api/usuarios/:id`: Eliminar un usuario.
+- **Blogs**:
+  - `POST /api/blogs`: Crear un nuevo blog.
+  - `GET /api/blogs`: Listar todos los blogs.
+  - `GET /api/blogs/:id`: Obtener un blog específico por ID.
+  - `GET /api/usuarios/:id/blogs`: Obtener todos los blogs de un usuario específico.
+  - `PUT /api/blogs/:id`: Actualizar un blog existente.
+  - `DELETE /api/blogs/:id`: Eliminar un blog.
+
+#### Librerías y Tecnologías Utilizadas
+- **Express**: Framework para construir la API REST de manera rápida y modular.
+- **mysql2**: Para interactuar con la base de datos desde los endpoints.
+- **bcryptjs**: Para validar contraseñas durante el inicio de sesión.
+
+#### Justificación de las Tecnologías
+- **Express**: Su simplicidad y flexibilidad lo hacen ideal para construir APIs RESTful.
+- **mysql2**: Permite realizar consultas eficientes y seguras a la base de datos.
+- **bcryptjs**: Garantiza la seguridad de las contraseñas durante el proceso de autenticación.
+
+## Implementación de Integración con WordPress
+
+### Gestión de Blogs
+
+#### Mejoras en la Base de Datos
+Se ha ampliado la tabla de blogs para incluir el campo `api_key` que almacena la contraseña de aplicación de WordPress necesaria para la autenticación con la API. La estructura actualizada de la tabla es:
+
+- `id`: Identificador único del blog
+- `nombre`: Nombre descriptivo del blog
+- `api_url`: URL del sitio WordPress
+- `api_key`: Contraseña de aplicación para autenticarse con la API de WordPress
+- `favicon`: URL del favicon del sitio, extraído automáticamente
+- `palabras_clave`: Palabras clave asociadas al blog
+- `tematica`: Temática principal del blog
+- `usuario_id`: Identificador del usuario propietario
+- Campos de timestamp para controlar la creación y actualización
+
+#### Extracción Automática de Favicons
+Se ha implementado una funcionalidad para extraer automáticamente el favicon de un sitio web WordPress. El proceso sigue estos pasos:
+
+1. El sistema analiza el HTML de la página utilizando Cheerio
+2. Busca en diferentes elementos `link` con atributos como `rel="icon"`, `rel="shortcut icon"`, etc.
+3. Si encuentra un favicon, resuelve la URL completa
+4. Si no encuentra un favicon específico, utiliza la ruta por defecto `/favicon.ico`
+5. Como fallback, utiliza el servicio de Google para favicons
+
+#### Librerías y Tecnologías Utilizadas
+- **Cheerio**: Para analizar y extraer información del HTML de los sitios web WordPress.
+- **Axios**: Para realizar peticiones HTTP a la API de WordPress y obtener el HTML de los sitios.
+- **Multer**: Para gestionar la subida de archivos como imágenes destacadas.
+
+#### Funcionalidades Implementadas en el Cliente
+
+##### Servicios
+- **blogService.ts**: Servicio para gestionar operaciones CRUD de blogs y extracción de favicons.
+- **wordpressService.ts**: Servicio para la comunicación con la API de WordPress.
+
+##### Hooks Personalizados
+- **useBlogManagement.ts**: Hook para gestionar la creación, listado y eliminación de blogs.
+- **useWordPressForm.ts**: Hook para gestionar el formulario de publicación en WordPress.
+
+##### Componentes
+- **AddBlogModal.tsx**: Modal para añadir nuevos blogs con campos para nombre, URL, contraseña de aplicación y temática.
+
+#### Interfaz de Usuario
+- Se ha modificado el sidebar izquierdo para mostrar los blogs del usuario con sus favicons
+- Se ha añadido un botón para crear nuevos blogs
+- Se implementó un modal con formulario para la creación de blogs
+- Los blogs creados se muestran en una lista con opciones para eliminar
+
+#### API RESTful Extendida
+Se han agregado nuevos endpoints en el servidor:
+
+- `POST /api/utils/extract-favicon`: Extrae el favicon de una URL proporcionada
+- `POST /api/wordpress/post/:blogId`: Publica una entrada en WordPress utilizando la API REST
+
+### Justificación de las Tecnologías
+
+#### Cheerio
+Se eligió Cheerio para el análisis de HTML por su eficiencia y facilidad de uso. Es una implementación ligera de jQuery para servidores que permite navegar por documentos HTML con selectores familiares.
+
+#### Separación de Responsabilidades
+La arquitectura del proyecto se ha diseñado siguiendo el patrón de separación de responsabilidades:
+- **Servicios**: Encapsulación de la lógica de comunicación con APIs
+- **Hooks**: Gestión del estado y lógica de negocio
+- **Componentes**: Presentación visual e interacción con el usuario
+
+Esta separación facilita el mantenimiento, las pruebas y la escalabilidad del proyecto.
+
+#### Gestión de Estado
+Se utilizan hooks de React (useState, useEffect) para gestionar el estado de la aplicación de manera eficiente y modular, permitiendo compartir lógica entre componentes sin duplicar código.
+
+---
+
+[29/04/2025]
+- Se añadió el campo 'wp_user' (usuario de WordPress) en el formulario de creación de blogs (AddBlogModal.tsx), en el estado del hook useBlogManagement.ts, en la interfaz Blog de blogService.ts y en la base de datos (db.init.js, blog.model.js).
+- Se actualizó la lógica de creación de blogs para guardar también el usuario de WordPress junto a la contraseña de aplicación.
+- Se modificó el backend (wordpress.controller.js) para que al publicar en WordPress utilice autenticación básica (Authorization: Basic base64(wp_user:api_key)) en vez de Bearer, usando los datos almacenados en la base de datos.
+- Se añadió la migración automática de la columna 'wp_user' en la tabla blogs si no existe.
+- Ahora la publicación de entradas en WordPress requiere tanto el usuario como la contraseña de aplicación, ambos configurables al crear el blog.
