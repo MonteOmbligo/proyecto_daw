@@ -38,6 +38,20 @@ export async function GET(
       wpApiUrl = wpApiUrl.slice(0, -1);
     }
     
+    // Detectar entorno de producción y comprobar URLs de localhost
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isLocalhost = wpApiUrl.includes('localhost') || wpApiUrl.includes('127.0.0.1');
+    
+    if (isProduction && isLocalhost) {
+      return NextResponse.json({
+        success: false,
+        error: "Error de configuración",
+        details: "No se puede acceder a URLs de localhost en un entorno de producción. Por favor, actualice la URL del blog con una dirección accesible públicamente.",
+        environment: process.env.NODE_ENV,
+        url: wpApiUrl,
+      }, { status: 400 });
+    }
+    
     // Construir la URL para prueba (endpoint básico)
     wpApiUrl = `${wpApiUrl}/wp-json`;
     

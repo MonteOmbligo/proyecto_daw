@@ -30,6 +30,20 @@ export async function POST(
       );
     }
 
+    // Detectar entorno de producción y comprobar URLs de localhost
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isLocalhost = blog.api_url.includes('localhost') || blog.api_url.includes('127.0.0.1');
+    
+    if (isProduction && isLocalhost) {
+      return NextResponse.json({
+        success: false,
+        error: "Error de configuración",
+        details: "No se puede acceder a URLs de localhost en un entorno de producción. Por favor, actualice la URL del blog con una dirección accesible públicamente.",
+        environment: process.env.NODE_ENV,
+        url: blog.api_url,
+      }, { status: 400 });
+    }
+
     // Datos del post
     // En entornos serverless, la request.json() puede fallar con FormData
     interface PostData {
