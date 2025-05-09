@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // En Next.js 15, params es una promesa que debemos resolver
+    // Resolver params como promesa
     const resolvedParams = await params;
     const blogId = parseInt(resolvedParams.id, 10);
     if (isNaN(blogId)) {
