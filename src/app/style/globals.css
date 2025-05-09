@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #504f4f;
-  --foreground: #171717;
-  --label-color: #6b7280; /* Color gris más claro para labels */
+  --background: #ffffff; /* Fondo blanco para máxima visibilidad */
+  --foreground: #000000; /* Texto negro */
+  --label-color: #111827; /* Gris muy oscuro para labels */
 }
 
 @theme inline {
@@ -15,9 +15,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --label-color: #9ca3af; /* Color gris más claro para labels en modo oscuro */
+    --background: #000000; /* Fondo negro en modo oscuro */
+    --foreground: #ffffff; /* Texto blanco */
+    --label-color: #f3f4f6; /* Gris muy claro para labels en modo oscuro */
   }
 }
 
@@ -27,10 +27,10 @@ body {
   font-family: var(--font-geist-sans);
 }
 
-/* Estilo para los labels de formularios */
 label {
   color: var(--label-color);
   font-family: var(--font-geist-mono);
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.2rem; /* Un poco más grande */
+  font-weight: 700;   /* Más negrita */
+  letter-spacing: 0.03em; /* Mejor legibilidad */
 }

@@ -204,3 +204,230 @@ Se utilizan hooks de React (useState, useEffect) para gestionar el estado de la 
 - Se modificó el backend (wordpress.controller.js) para que al publicar en WordPress utilice autenticación básica (Authorization: Basic base64(wp_user:api_key)) en vez de Bearer, usando los datos almacenados en la base de datos.
 - Se añadió la migración automática de la columna 'wp_user' en la tabla blogs si no existe.
 - Ahora la publicación de entradas en WordPress requiere tanto el usuario como la contraseña de aplicación, ambos configurables al crear el blog.
+
+---
+
+[09/05/2025]
+# Migración a Vercel y Adaptación a Arquitectura Serverless
+
+## Motivación de la Migración
+
+La decisión de migrar el proyecto a Vercel responde a varios objetivos estratégicos:
+
+1. **Simplificación de la infraestructura**: Unificar el frontend y backend en una única plataforma de despliegue.
+2. **Escalabilidad mejorada**: Aprovechar la arquitectura serverless para escalar automáticamente según la demanda.
+3. **Optimización de costes**: Reducir gastos de infraestructura al pagar solo por el tiempo de ejecución real.
+4. **Mejora del rendimiento global**: Beneficiarse de la red de distribución de contenido (CDN) de Vercel.
+5. **Integración continua**: Facilitar la implementación de un flujo de trabajo CI/CD directamente desde el repositorio de GitHub.
+
+## Migración de la Base de Datos a Neon
+
+### Selección de Neon como Proveedor de Base de Datos
+
+La migración de nuestra base de datos MySQL local a Neon PostgreSQL se realizó por las siguientes razones:
+
+- **Compatibilidad con arquitectura serverless**: Neon ofrece un servicio de base de datos PostgreSQL diseñado específicamente para entornos serverless, con escalado automático y facturación por uso.
+- **Separación del almacenamiento y computación**: Permite optimizar costos al escalar estos recursos de manera independiente.
+- **Alta disponibilidad**: Proporciona replicación automática y respaldos continuos.
+- **API moderna**: Facilita la integración con aplicaciones serverless modernas.
+
+### Proceso de Migración de la Base de Datos
+
+El proceso de migración de datos de MySQL local a Neon PostgreSQL incluyó los siguientes pasos:
+
+1. **Creación de la cuenta en Neon**: Se estableció un nuevo proyecto en la plataforma de Neon.
+2. **Diseño del esquema en PostgreSQL**: Se adaptó el esquema existente de MySQL para aprovechar las características de PostgreSQL.
+3. **Exportación de datos**: Se exportaron los datos de las tablas locales de MySQL.
+4. **Transformación de datos**: Se ajustó el formato de los datos exportados para que fueran compatibles con PostgreSQL.
+5. **Importación a Neon**: Se cargaron los datos transformados en la nueva base de datos.
+6. **Verificación de integridad**: Se realizaron pruebas para asegurar que todos los datos se hubieran migrado correctamente.
+7. **Actualización de credenciales**: Se actualizaron las variables de entorno en Vercel para incluir las nuevas credenciales de conexión.
+
+### Adaptación del Código para PostgreSQL
+
+La migración requirió cambios significativos en el código del proyecto:
+
+- Reemplazo de la biblioteca `mysql2` por `pg` para conectarse a PostgreSQL.
+- Adaptación de las consultas SQL para cumplir con la sintaxis de PostgreSQL.
+- Modificación de los tipos de datos para aprovechar los tipos nativos de PostgreSQL.
+- Implementación de transacciones y manejo de errores específicos de PostgreSQL.
+
+## Reconstrucción del Backend para Arquitectura Serverless
+
+### Desafíos de la Arquitectura Serverless
+
+La adaptación del backend de Express tradicional a una arquitectura serverless en Vercel presentó varios desafíos:
+
+1. **Ciclo de vida de las funciones**: Las funciones serverless tienen un ciclo de vida efímero, lo que requiere un enfoque diferente para el mantenimiento de estado y conexiones.
+2. **Limitaciones de tiempo de ejecución**: Las funciones tienen límites de tiempo de ejecución que no existían en el servidor Express tradicional.
+3. **Manejo de conexiones a base de datos**: Necesidad de implementar pooling y conexiones efímeras debido a las características de las funciones serverless.
+4. **Rutas y middleware**: La estructura de rutas y middleware de Express no se traslada directamente a funciones serverless.
+
+### Implementación de Rutas de API con Next.js App Router
+
+La reconstrucción del backend implicó:
+
+1. **Migración de controladores**: Transformación de los controladores Express a funciones compatibles con la API de Next.js.
+   - Cada endpoint de API se convirtió en un archivo `route.ts` dentro de la estructura de directorios de Next.js App Router.
+   - Se implementaron las funciones HTTP correspondientes (GET, POST, PUT, DELETE) según el estándar de Next.js.
+
+2. **Adaptación del manejo de parámetros**: En particular, se tuvo que abordar un desafío específico con los parámetros dinámicos en las rutas, que en Next.js 15 se manejan como promesas:
+
+   ```typescript
+   export async function GET(
+     request: NextRequest,
+     { params }: { params: Promise<{ id: string }> }
+   ) {
+     // Resolver params como promesa
+     const resolvedParams = await params;
+     const blogId = parseInt(resolvedParams.id, 10);
+     // ...resto del código
+   }
+   ```
+
+3. **Optimización de las conexiones a base de datos**: Implementación de un sistema de conexión eficiente que evita la sobrecarga de conexiones en entornos serverless:
+
+   - Uso de un pool de conexiones configurable según la carga.
+   - Implementación de lógica para reutilizar conexiones cuando sea posible.
+   - Cierre adecuado de conexiones después de su uso para evitar fugas de recursos.
+
+4. **Manejo de autenticación**: Adaptación del sistema de autenticación para funcionar en un entorno serverless, asegurando la seguridad en cada invocación de función.
+
+5. **Implementación de manejo de errores robusto**: Desarrollo de un sistema uniforme para capturar, registrar y responder a errores en toda la aplicación:
+
+   ```typescript
+   try {
+     // Lógica de la función
+   } catch (error) {
+     console.error("Error detallado:", error);
+     return NextResponse.json(
+       { 
+         success: false,
+         error: "Mensaje de error para el usuario", 
+         details: (error as Error).message,
+         stack: process.env.NODE_ENV !== 'production' ? (error as Error).stack : undefined
+       },
+       { status: 500 }
+     );
+   }
+   ```
+
+### Ventajas de la Nueva Arquitectura
+
+Esta reconstrucción ha proporcionado varias ventajas:
+
+1. **Mejor escalabilidad**: La aplicación ahora puede manejar picos de tráfico sin provisionamiento manual.
+2. **Reducción de costos operativos**: Solo se paga por el tiempo de ejecución real.
+3. **Despliegue simplificado**: El proceso de CI/CD está completamente integrado con GitHub.
+4. **Mayor disponibilidad**: La aplicación se beneficia de la infraestructura global de Vercel.
+5. **Mejor rendimiento**: Las funciones serverless se ejecutan cerca de los usuarios gracias a la red global de Vercel.
+
+## Implementación de Detección de Entorno para Conexiones a WordPress
+
+Un desafío importante en la migración fue gestionar las diferencias entre el entorno de desarrollo local y el entorno de producción en Vercel, especialmente para las conexiones a WordPress.
+
+### Problema de las URLs Locales en Producción
+
+Se identificó un problema crítico: cuando la aplicación intentaba conectarse a instancias de WordPress configuradas con URLs locales (por ejemplo, `http://localhost/auditivo_wordpress`) desde el entorno de producción en Vercel, estas conexiones fallaban con errores del tipo:
+
+```
+Error 500, no se puede acceder a https://proyecto-daw-4.vercel.app/api/wordpress/post/3 
+Mensaje de test: {"success":false,"error":"Error al probar la conexión con WordPress",
+"details":"fetch failed"}
+```
+
+Esto ocurre porque `localhost` en el servidor de Vercel se refiere al propio servidor, no a la máquina de desarrollo local.
+
+### Solución Implementada
+
+Se implementó una solución robusta para manejar este escenario:
+
+1. **Detección de entorno**: Se añadió código para detectar automáticamente si la aplicación está ejecutándose en un entorno de producción:
+
+   ```typescript
+   const isProduction = process.env.NODE_ENV === 'production';
+   ```
+
+2. **Validación de URLs**: Se añadió lógica para identificar URLs de localhost en configuraciones de blog:
+
+   ```typescript
+   const isLocalhost = wpApiUrl.includes('localhost') || wpApiUrl.includes('127.0.0.1');
+   ```
+
+3. **Manejo inteligente de errores**: Si se detecta que la aplicación está en producción e intenta conectarse a una URL de localhost, se proporciona un mensaje de error claro y útil para el usuario:
+
+   ```typescript
+   if (isProduction && isLocalhost) {
+     return NextResponse.json({
+       success: false,
+       error: "Error de configuración",
+       details: "No se puede acceder a URLs de localhost en un entorno de producción. Por favor, actualice la URL del blog con una dirección accesible públicamente.",
+       environment: process.env.NODE_ENV,
+       url: wpApiUrl,
+     }, { status: 400 });
+   }
+   ```
+
+4. **Enriquecimiento del diagnóstico**: Se mejoró el endpoint de diagnóstico para proporcionar información adicional sobre la configuración del blog, incluyendo advertencias claras sobre el uso de URLs de localhost en producción:
+
+   ```typescript
+   const diagnostico = {
+     // ...otros campos
+     es_localhost: isLocalhost,
+     advertencia_produccion: isProduction && isLocalhost ? 
+       "Esta URL usa 'localhost', que no es accesible en entornos de producción. Por favor, use una URL pública." : 
+       null,
+     entorno: process.env.NODE_ENV || 'desarrollo',
+   };
+   ```
+
+## Implementación de ngrok para Desarrollo y Pruebas
+
+Para facilitar el desarrollo y las pruebas con WordPress locales desde el entorno de producción, se implementó el uso de ngrok como solución de túnel seguro.
+
+### ¿Qué es ngrok y cómo se integra?
+
+ngrok es una herramienta que permite exponer servicios locales a internet a través de túneles seguros. En el contexto de este proyecto:
+
+1. **Exposición de WordPress local**: ngrok permite que un WordPress instalado localmente (por ejemplo, en XAMPP o WAMP) sea accesible desde internet con una URL temporal.
+
+2. **Proceso de implementación**:
+   - Instalación de ngrok en la máquina de desarrollo.
+   - Ejecución del comando `ngrok http 80` para exponer el servidor web local.
+   - Obtención de una URL pública temporal (por ejemplo, `https://1234abcd.ngrok.io`).
+   - Configuración de la URL de la API de WordPress en la aplicación utilizando la URL de ngrok seguida de la ruta específica (por ejemplo, `https://1234abcd.ngrok.io/auditivo_wordpress`).
+
+3. **Ventajas para el desarrollo**:
+   - Permite probar la integración completa en el entorno de producción sin necesidad de desplegar un WordPress público.
+   - Facilita la depuración de problemas específicos de la integración.
+   - Proporciona un entorno de prueba realista sin costos adicionales de hosting.
+
+### Documentación del Uso de ngrok
+
+Se ha añadido documentación detallada para el equipo de desarrollo sobre cómo utilizar ngrok:
+
+1. **Instalación**: `winget install Ngrok.Ngrok` en Windows o métodos equivalentes en otros sistemas operativos.
+
+2. **Configuración**: Creación de una cuenta gratuita en ngrok.com y autenticación del cliente con `ngrok config add-authtoken <token>`.
+
+3. **Uso básico**: Ejecución de `ngrok http 80` para exponer el servidor web local.
+
+4. **Configuración en la aplicación**: Instrucciones para actualizar la URL de la API de WordPress en la base de datos con la URL de ngrok + la ruta específica de la instalación.
+
+5. **Limitaciones**: Documentación de las limitaciones de la versión gratuita de ngrok, principalmente el hecho de que la URL pública cambia cada vez que se reinicia ngrok.
+
+## Conclusiones sobre la Migración
+
+La migración a Vercel y la adaptación a una arquitectura serverless ha representado un hito significativo en el desarrollo del proyecto, proporcionando:
+
+1. **Mejora en la escalabilidad y rendimiento**: La aplicación ahora puede manejar cargas variables de manera eficiente.
+
+2. **Reducción de la complejidad operativa**: La gestión de infraestructura se ha simplificado significativamente.
+
+3. **Mejor experiencia de desarrollo**: El flujo de trabajo de desarrollo se ha optimizado con despliegues automáticos e integración continua.
+
+4. **Mayor robustez**: El manejo mejorado de errores y la detección de configuraciones problemáticas (como URLs de localhost en producción) ha aumentado la fiabilidad del sistema.
+
+5. **Flexibilidad para desarrollo y pruebas**: La integración de ngrok proporciona un puente eficaz entre el desarrollo local y el entorno de producción.
+
+Esta migración no solo ha mejorado las características técnicas del proyecto, sino que también ha establecido una base sólida para el crecimiento futuro y la adición de nuevas funcionalidades.
