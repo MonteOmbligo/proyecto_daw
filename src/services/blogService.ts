@@ -58,19 +58,26 @@ export const blogService = {
   deleteBlog: async (id: number) => {
     const response = await axios.delete(`/api/blogs/${id}`);
     return response.data;
-  },
-  /**
+  },  /**
    * Extraer el favicon de una URL
    * @param url URL del sitio web
    */
   extractFavicon: async (url: string) => {
     try {
+      console.log('Intentando extraer favicon de:', url);
       const response = await axios.post('/api/utils/extract-favicon', { url });
-      return response.data.favicon || 'https://www.google.com/s2/favicons?domain=' + url;
+      
+      if (response.data && response.data.favicon) {
+        console.log('Favicon encontrado:', response.data.favicon);
+        return response.data.favicon;
+      } else {
+        console.warn('No se encontró favicon en la respuesta, usando fallback de Google');
+        return 'https://www.google.com/s2/favicons?domain=' + url + '&sz=128';
+      }
     } catch (error) {
       console.error('Error al extraer el favicon:', error);
       // URL por defecto para favicon si falla la extracción
-      return 'https://www.google.com/s2/favicons?domain=' + url;
+      return 'https://www.google.com/s2/favicons?domain=' + url + '&sz=128';
     }
   }
 };
