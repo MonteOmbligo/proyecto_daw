@@ -26,47 +26,82 @@ export const wordpressService = {
    * @param blog El blog seleccionado para publicar
    * @param postData Datos del post a publicar
    * @returns Respuesta de la API
-   */
-  publishPost: async (blog: Blog, postData: WordPressPostData) => {
+   */  publishPost: async (blog: Blog, postData: WordPressPostData) => {
     if (!blog) {
       throw new Error('No se ha seleccionado ningún blog');
     }
     
-    // Crear objeto FormData para enviar archivos
-    const formData = new FormData();
-    formData.append('title', postData.title);
-    formData.append('content', postData.content);
-    formData.append('excerpt', postData.excerpt);
-    formData.append('status', postData.status);
+    // Verificar si tenemos un archivo adjunto
+    const hasFile = postData.featured_media !== undefined;
     
-    // Procesar categorías y etiquetas
-    if (postData.categories) {
-      const categoriesArray = postData.categories.split(',').map(cat => cat.trim());
-      formData.append('categories', JSON.stringify(categoriesArray));
-    }
-    
-    if (postData.tags) {
-      const tagsArray = postData.tags.split(',').map(tag => tag.trim());
-      formData.append('tags', JSON.stringify(tagsArray));
-    }
-
-    // Si hay una imagen destacada
-    if (postData.featured_media) {
-      formData.append('featured_media', postData.featured_media);
-    }    // Configuración de la petición
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...(blog.api_key && { 'Authorization': `Bearer ${blog.api_key}` })
+    if (hasFile) {
+      // Si hay un archivo, usamos FormData
+      const formData = new FormData();
+      formData.append('title', postData.title);
+      formData.append('content', postData.content);
+      formData.append('excerpt', postData.excerpt);
+      formData.append('status', postData.status);
+      
+      // Procesar categorías y etiquetas
+      if (postData.categories) {
+        const categoriesArray = postData.categories.split(',').map(cat => cat.trim());
+        formData.append('categories', JSON.stringify(categoriesArray));
       }
-    };
-
-    // Realizar la petición a nuestro servidor
-    return await axios.post(
-      `/api/wordpress/post/${blog.id}`,
-      formData,
-      config
-    );
+      
+      if (postData.tags) {
+        const tagsArray = postData.tags.split(',').map(tag => tag.trim());
+        formData.append('tags', JSON.stringify(tagsArray));
+      }
+  
+      // Adjuntar imagen destacada
+      if (postData.featured_media) {
+        formData.append('featured_media', postData.featured_media);
+      }
+      
+      // Configuración para FormData
+      const configFormData = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(blog.api_key && { 'Authorization': `Bearer ${blog.api_key}` })
+        }
+      };
+  
+      // Realizar la petición con FormData
+      return await axios.post(
+        `/api/wordpress/post/${blog.id}`,
+        formData,
+        configFormData
+      );
+    } else {
+      // Si no hay archivo, usamos JSON (más confiable en serverless)
+      const jsonData = {
+        title: postData.title,
+        content: postData.content,
+        excerpt: postData.excerpt,
+        status: postData.status,
+        categories: postData.categories ? 
+          postData.categories.split(',').map(cat => cat.trim()) : 
+          [],
+        tags: postData.tags ? 
+          postData.tags.split(',').map(tag => tag.trim()) : 
+          []
+      };
+      
+      // Configuración para JSON
+      const configJson = {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(blog.api_key && { 'Authorization': `Bearer ${blog.api_key}` })
+        }
+      };
+  
+      // Realizar la petición con JSON
+      return await axios.post(
+        `/api/wordpress/post/${blog.id}`,
+        jsonData,
+        configJson
+      );
+    }
   },
   
   /**

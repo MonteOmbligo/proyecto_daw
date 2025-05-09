@@ -22,11 +22,27 @@ export async function POST(
     }
     
     // Datos del post
-    const postData = await request.json();
+    // En entornos serverless, la request.json() puede fallar con FormData
+    let postData;
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('multipart/form-data')) {
+      // Esto es FormData
+      const formData = await request.formData();
+      postData = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+        excerpt: formData.get('excerpt') as string,
+        status: formData.get('status') as string,
+        categories: formData.get('categories') ? JSON.parse(formData.get('categories') as string) : [],
+        tags: formData.get('tags') ? JSON.parse(formData.get('tags') as string) : [],
+      };
+    } else {
+      // Es JSON normal
+      postData = await request.json();
+    }
     
     // Simular publicación en WordPress
-    // En una implementación real, aquí harías la petición a la API de WordPress
-    
     console.log(`Simulando publicación en WordPress para blog ${blog.nombre}`);
     console.log("Post data:", postData);
     
@@ -39,7 +55,7 @@ export async function POST(
   } catch (error) {
     console.error("Error al publicar en WordPress:", error);
     return NextResponse.json(
-      { error: "Error al publicar en WordPress" },
+      { error: "Error al publicar en WordPress", details: (error as Error).message },
       { status: 500 }
     );
   }
