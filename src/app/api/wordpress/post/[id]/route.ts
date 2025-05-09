@@ -21,14 +21,23 @@ export async function POST(
       return NextResponse.json({ error: "Blog no encontrado" }, { status: 404 });
     }
     
+    // Verificar si el blog tiene URL de API y credenciales
+    if (!blog.api_url) {
+      return NextResponse.json(
+        { error: "El blog no tiene configurada la URL de la API de WordPress" },
+        { status: 400 }
+      );
+    }
+    
     // Datos del post
     // En entornos serverless, la request.json() puede fallar con FormData
-    let postData;
+    let postData: any;
+    let formData: FormData | null = null;
     const contentType = request.headers.get('content-type') || '';
     
     if (contentType.includes('multipart/form-data')) {
       // Esto es FormData
-      const formData = await request.formData();
+      formData = await request.formData();
       postData = {
         title: formData.get('title') as string,
         content: formData.get('content') as string,
@@ -42,20 +51,116 @@ export async function POST(
       postData = await request.json();
     }
     
-    // Simular publicación en WordPress
-    console.log(`Simulando publicación en WordPress para blog ${blog.nombre}`);
-    console.log("Post data:", postData);
+    // Normalizar la URL de la API de WordPress
+    let wpApiUrl = blog.api_url;
     
-    // Respuesta simulada exitosa
+    // Asegurarse de que la URL no termina en /
+    if (wpApiUrl.endsWith('/')) {
+      wpApiUrl = wpApiUrl.slice(0, -1);
+    }
+    
+    // Construir la URL completa de la API
+    wpApiUrl = `${wpApiUrl}/wp-json/wp/v2/posts`;
+    
+    // Preparar los headers con autenticación si existe
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    
+    // Obtener credenciales de autenticación
+    let wp_user: string | null = null;
+    let wp_password: string | null = null;
+    
+    if (contentType.includes('multipart/form-data') && formData) {
+      wp_user = formData.get('wp_user') as string;
+      wp_password = formData.get('wp_password') as string;
+    } else {
+      wp_user = postData.wp_user;
+      wp_password = postData.wp_password;
+    }
+    
+    // Si no hay credenciales en los datos, usar las del blog
+    if (!wp_user && blog.wp_user) {
+      wp_user = blog.wp_user;
+    }
+    
+    if (!wp_password && blog.api_key) {
+      wp_password = blog.api_key;
+    }
+      if (wp_user && wp_password) {
+      // Autenticación básica
+      const authString = `${wp_user}:${wp_password}`;
+      const base64Auth = Buffer.from(authString).toString('base64');
+      headers.append('Authorization', `Basic ${base64Auth}`);
+    }
+    
+    // Preparar los datos para WordPress
+    const wpPostData = {
+      title: {
+        rendered: postData.title,
+        raw: postData.title
+      },
+      content: {
+        rendered: postData.content,
+        raw: postData.content
+      },
+      excerpt: {
+        rendered: postData.excerpt,
+        raw: postData.excerpt
+      },
+      status: postData.status || 'draft',
+    };
+    
+    console.log(`Publicando en WordPress: ${wpApiUrl}`);
+    console.log('Datos para WordPress:', JSON.stringify(wpPostData));
+    
+    // Realizar la petición a WordPress
+    const wpResponse = await fetch(wpApiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(wpPostData),
+    });
+      if (!wpResponse.ok) {
+      let errorDetails = '';
+      try {
+        // Intentar analizar la respuesta como JSON
+        const errorJson = await wpResponse.json();
+        errorDetails = JSON.stringify(errorJson);
+        console.error('Error de WordPress (JSON):', errorJson);
+      } catch {
+        // Si no es JSON, obtener como texto
+        errorDetails = await wpResponse.text();
+        console.error('Error de WordPress (texto):', errorDetails);
+      }
+      
+      return NextResponse.json(
+        { 
+          error: "Error al publicar en WordPress", 
+          details: errorDetails,
+          status: wpResponse.status,
+          statusText: wpResponse.statusText
+        },
+        { status: wpResponse.status }
+      );
+    }
+    
+    // Obtener la respuesta exitosa
+    const wpResponseData = await wpResponse.json();
+    console.log('Respuesta exitosa de WordPress:', wpResponseData);
+    
     return NextResponse.json({
-      id: Math.floor(Math.random() * 10000),
-      link: `https://example.com/post-${Date.now()}`,
-      status: postData.status || "publish"
+      id: wpResponseData.id,
+      link: wpResponseData.link || wpResponseData.guid?.rendered,
+      status: wpResponseData.status,
+      message: "Entrada publicada con éxito en WordPress"
     });
   } catch (error) {
     console.error("Error al publicar en WordPress:", error);
     return NextResponse.json(
-      { error: "Error al publicar en WordPress", details: (error as Error).message },
+      { 
+        error: "Error al publicar en WordPress", 
+        details: (error as Error).message,
+        stack: (error as Error).stack
+      },
       { status: 500 }
     );
   }
