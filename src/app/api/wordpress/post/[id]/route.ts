@@ -4,10 +4,11 @@ import { blogService } from "@/lib/db";
 // POST /api/wordpress/post/[id]
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const blogId = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const blogId = parseInt(resolvedParams.id, 10);
     if (isNaN(blogId)) {
       return NextResponse.json({ error: "ID de blog no válido" }, { status: 400 });
     }

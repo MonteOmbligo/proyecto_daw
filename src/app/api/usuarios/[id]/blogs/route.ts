@@ -4,10 +4,11 @@ import { blogService } from "@/lib/db";
 // GET /api/usuarios/[id]/blogs
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id, 10);
     if (isNaN(userId)) {
       return NextResponse.json({ error: "ID de usuario no válido" }, { status: 400 });
     }

@@ -5,10 +5,11 @@ import { blogService } from "@/lib/db";
 // GET: Obtener blog por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID no válido" }, { status: 400 });
     }
@@ -33,10 +34,11 @@ export async function GET(
 // PUT: Actualizar blog por ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID no válido" }, { status: 400 });
     }
@@ -61,10 +63,11 @@ export async function PUT(
 // DELETE: Eliminar blog por ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID no válido" }, { status: 400 });
     }
