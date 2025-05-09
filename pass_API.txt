@@ -1,2 +1,3 @@
 Usuario: Almansego
 contraseña: YcYX xq7G EvCI egVF qVZ3 1xZ6
+Url NGROK: https://da92-89-29-159-181.ngrok-free.app/auditivo_wordpress

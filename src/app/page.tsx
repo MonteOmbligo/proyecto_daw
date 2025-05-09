@@ -5,6 +5,7 @@ import axios from 'axios';
 import useWordPressForm from '../hooks/useWordPressForm';
 import useBlogManagement from '../hooks/useBlogManagement';
 import AddBlogModal from './components/AddBlogModal';
+import FaviconImage from './components/FaviconImage';
 import Image from 'next/image';
 import type { Blog } from '../services/blogService';
 
@@ -76,7 +77,7 @@ export default function HomePage() {
           {/* Logo Section */}
           <div>
             <div className="mb-8 text-center font-bold text-xl">
-              <Image src="/img/1.jpg" alt="Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-2" />
+              <Image src="C:\Users\Juan\Pictures\ALMANSEGO MEDIA\ISOTIPO" alt="Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-2" />
             </div>
             
             {/* Blog Management */}
@@ -107,16 +108,10 @@ export default function HomePage() {
                       key={blog.id}
                       className={`flex items-center p-2 border rounded hover:bg-gray-200 cursor-pointer ${selectedBlog?.id === blog.id ? 'bg-blue-100 border-blue-400' : ''}`}
                       onClick={() => handleSidebarBlogClick(blog)}
-                    >
-                      {blog.favicon && (
-                        <Image
-                          src={blog.favicon}
-                          alt={blog.nombre}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 mr-2 object-contain"
-                        />
-                      )}
+                    >                      <FaviconImage
+                        src={blog.favicon || `https://www.google.com/s2/favicons?domain=${blog.api_url}&sz=64`}
+                        alt={blog.nombre}
+                      />
                       <span className="flex-grow text-sm truncate">{blog.nombre}</span>
                       <button 
                         onClick={e => { e.stopPropagation(); deleteBlog(blog.id!); }}
