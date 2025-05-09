@@ -11,13 +11,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    // Definir la URL base para la extracción de favicon
+      // Definir la URL base para la extracción de favicon
     let faviconUrl = "";
     try {
       const urlObject = new URL(url);
       faviconUrl = `${urlObject.protocol}//${urlObject.hostname}/favicon.ico`;
-    } catch (error) {
+    } catch (err) {
       return NextResponse.json(
         { error: "URL inválida" },
         { status: 400 }
