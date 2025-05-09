@@ -53,13 +53,27 @@ export async function GET(
       const base64Auth = Buffer.from(authString).toString('base64');
       headers.append('Authorization', `Basic ${base64Auth}`);
     }
+      // Hacer que la URL sea absoluta para evitar problemas en Vercel
+    if (!wpApiUrl.startsWith('http')) {
+      console.warn('URL de WordPress no absoluta, añadiendo https://', wpApiUrl);
+      wpApiUrl = `https://${wpApiUrl.replace(/^\/+/, '')}`;
+    }
+
+    // Realizar petición de prueba con opciones de timeout y error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de timeout
+
+    console.log(`Probando conexión a WordPress: ${wpApiUrl}`);
     
-    // Realizar petición de prueba
     const response = await fetch(wpApiUrl, {
       method: 'GET',
       headers: headers,
-      cache: 'no-cache'
+      cache: 'no-cache',
+      signal: controller.signal,
+      keepalive: true
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       let errorDetails = '';
