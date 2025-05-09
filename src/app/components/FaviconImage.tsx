@@ -32,20 +32,20 @@ const FaviconImage: React.FC<FaviconImageProps> = ({
       setImgSrc(fallbackSrc);
       setError(true);
     }
-  };
-
-  return (
-    <div className={className} style={{ position: 'relative', width, height }}>
-      {/* Usamos un img estándar en lugar de Next/Image para evitar problemas de optimización */}
-      <img
+  };  return (
+    <div className={`${className} relative`}
+         // Using data attributes to pass dimensions to CSS if needed
+         data-width={width}
+         data-height={height}>
+      {/* Using Next.js Image with unoptimized prop to handle external images better */}
+      <Image
         src={imgSrc}
         alt={alt}
         onError={handleError}
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          objectFit: 'contain' 
-        }}
+        width={width}
+        height={height}
+        className="object-contain"
+        unoptimized // Skip image optimization for favicons
       />
     </div>
   );

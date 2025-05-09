@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff; /* Fondo blanco para máxima visibilidad */
   --foreground: #000000; /* Texto negro */
-  --label-color: #111827; /* Gris muy oscuro para labels */
+  --label-color: #5b5f66; /* Gris muy oscuro para labels */
 }
 
 @theme inline {
@@ -16,8 +16,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #000000; /* Fondo negro en modo oscuro */
-    --foreground: #ffffff; /* Texto blanco */
-    --label-color: #f3f4f6; /* Gris muy claro para labels en modo oscuro */
+    --foreground: #f7e5e5; /* Texto blanco */
+    --label-color: #889eca; /* Gris muy claro para labels en modo oscuro */
   }
 }
 
