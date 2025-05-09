@@ -31,6 +31,7 @@ const initDatabase = async () => {
         email VARCHAR(100) NOT NULL UNIQUE,
         contraseña VARCHAR(255) NOT NULL,
         estilo_escritura VARCHAR(100),
+        api_key_llm VARCHAR(255),
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
