@@ -28,10 +28,19 @@ export async function POST(
         { status: 400 }
       );
     }
-    
-    // Datos del post
+      // Datos del post
     // En entornos serverless, la request.json() puede fallar con FormData
-    let postData: any;
+    interface PostData {
+      title: string;
+      content: string;
+      excerpt: string;
+      status: string;
+      categories?: string[] | null;
+      tags?: string[] | null;
+      wp_user?: string;
+      wp_password?: string;
+    }
+    let postData: PostData;
     let formData: FormData | null = null;
     const contentType = request.headers.get('content-type') || '';
     
@@ -65,10 +74,9 @@ export async function POST(
     // Preparar los headers con autenticación si existe
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
-    
-    // Obtener credenciales de autenticación
-    let wp_user: string | null = null;
-    let wp_password: string | null = null;
+      // Obtener credenciales de autenticación
+    let wp_user: string | null | undefined = null;
+    let wp_password: string | null | undefined = null;
     
     if (contentType.includes('multipart/form-data') && formData) {
       wp_user = formData.get('wp_user') as string;

@@ -34,11 +34,22 @@ export const wordpressService = {
     if (!blog) {
       throw new Error('No se ha seleccionado ningún blog');
     }
-    
-    // Verificar si tenemos un archivo adjunto
+      // Verificar si tenemos un archivo adjunto
     const hasFile = postData.featured_media !== undefined;
-    let requestData: any;
-    let headers: any = {};
+    
+    interface RequestDataType {
+      title: string;
+      content: string;
+      excerpt: string;
+      status: string;
+      categories?: string[];
+      tags?: string[];
+      wp_user?: string;
+      wp_password?: string;
+    }
+    
+    let requestData: RequestDataType | FormData;
+    let headers: Record<string, string> = {};
     
     if (hasFile) {
       // Si hay un archivo, usamos FormData
