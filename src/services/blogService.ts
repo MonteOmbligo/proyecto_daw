@@ -1,14 +1,15 @@
 import axios from 'axios';
 
 export interface Blog {
-  id?: number;
+  id: number;
   nombre: string;
   api_url: string;
   api_key?: string;
-  favicon?: string;
+  usuario_id: number;
+  favicon: string;
   palabras_clave?: string;
   tematica: string;
-  usuario_id: number;
+  wp_user?: string;
 }
 
 /**

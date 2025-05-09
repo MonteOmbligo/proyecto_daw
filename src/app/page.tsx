@@ -6,6 +6,7 @@ import useWordPressForm from '../hooks/useWordPressForm';
 import useBlogManagement from '../hooks/useBlogManagement';
 import AddBlogModal from './components/AddBlogModal';
 import Image from 'next/image';
+import type { Blog } from '../services/blogService';
 
 // ID del usuario actual (en una aplicación real, esto se obtendría del sistema de autenticación)
 const CURRENT_USER_ID = 1;
@@ -13,7 +14,7 @@ const CURRENT_USER_ID = 1;
 export default function HomePage() {
   const [serverOnline, setServerOnline] = useState(true);
   // Estado para el blog seleccionado
-  const [selectedBlog, setSelectedBlog] = useState<any>(null);
+  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
 
   useEffect(() => {
     const checkServerStatus = async () => {
@@ -52,7 +53,7 @@ export default function HomePage() {
   } = useBlogManagement(CURRENT_USER_ID);
 
   // Manejar selección desde el sidebar
-  const handleSidebarBlogClick = (blog: any) => {
+  const handleSidebarBlogClick = (blog: Blog) => {
     setSelectedBlog(blog);
   };
 
@@ -76,7 +77,7 @@ export default function HomePage() {
           {/* Logo Section */}
           <div>
             <div className="mb-8 text-center font-bold text-xl">
-              <img src="/img/1.jpg" alt="Logo" className="w-16 h-16 mx-auto mb-2" />
+              <Image src="/img/1.jpg" alt="Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-2" />
             </div>
             
             {/* Blog Management */}
@@ -109,9 +110,11 @@ export default function HomePage() {
                       onClick={() => handleSidebarBlogClick(blog)}
                     >
                       {blog.favicon && (
-                        <img 
-                          src={blog.favicon} 
-                          alt={blog.nombre} 
+                        <Image
+                          src={blog.favicon}
+                          alt={blog.nombre}
+                          width={20}
+                          height={20}
                           className="w-5 h-5 mr-2 object-contain"
                         />
                       )}
