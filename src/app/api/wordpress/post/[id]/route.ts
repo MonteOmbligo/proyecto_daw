@@ -105,8 +105,7 @@ export async function POST(
       const base64Auth = Buffer.from(authString).toString('base64');
       headers.append('Authorization', `Basic ${base64Auth}`);
     }
-    
-    // Preparar los datos para WordPress
+      // Preparar los datos para WordPress - formato simple para mayor compatibilidad
     const wpPostData = {
       title: postData.title,
       content: postData.content,
@@ -118,16 +117,25 @@ export async function POST(
     console.log('Datos para WordPress:', JSON.stringify(wpPostData));
     console.log('Headers:', JSON.stringify(Object.fromEntries(headers.entries())));
     
-    // Realizar la petición a WordPress con un timeout más largo
+    // Hacer que la URL sea absoluta para evitar problemas en Vercel
+    if (!wpApiUrl.startsWith('http')) {
+      console.warn('URL de WordPress no absoluta, añadiendo https://', wpApiUrl);
+      wpApiUrl = `https://${wpApiUrl.replace(/^\/+/, '')}`;
+    }
+    
+    // Realizar la petición a WordPress con un timeout más largo pero razonable para Vercel
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos de timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de timeout (más adecuado para Vercel)
     
     try {
+      // Añadir timeout y opciones para mejorar comportamiento en entornos serverless
       const wpResponse = await fetch(wpApiUrl, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(wpPostData),
         signal: controller.signal,
+        cache: 'no-store',
+        keepalive: true
       });
       
       clearTimeout(timeoutId);

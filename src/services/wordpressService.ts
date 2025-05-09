@@ -110,13 +110,17 @@ export const wordpressService = {
       
       headers = { 'Content-Type': 'application/json' };
     }
-    
-    // Realizar la petición
+      // Realizar la petición con opciones de timeout adecuadas
     console.log(`Enviando post al blog ${blog.nombre} (ID: ${blog.id})`);
     return await axios.post(
       `/api/wordpress/post/${blog.id}`,
       requestData,
-      { headers }
+      { 
+        headers,
+        timeout: 20000, // 20 segundos de timeout
+        maxContentLength: 10 * 1024 * 1024, // Permitir hasta 10MB
+        maxBodyLength: 10 * 1024 * 1024 // Permitir hasta 10MB
+      }
     );
   },
   
