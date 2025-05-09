@@ -53,9 +53,7 @@ export const wordpressService = {
     // Si hay una imagen destacada
     if (postData.featured_media) {
       formData.append('featured_media', postData.featured_media);
-    }
-
-    // Configuración de la petición
+    }    // Configuración de la petición
     const config = {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -65,7 +63,7 @@ export const wordpressService = {
 
     // Realizar la petición a nuestro servidor
     return await axios.post(
-      `http://localhost:3001/api/wordpress/post/${blog.id}`,
+      `/api/wordpress/post/${blog.id}`,
       formData,
       config
     );
@@ -76,7 +74,7 @@ export const wordpressService = {
    * @returns Lista de blogs
    */
   getBlogs: async () => {
-    const response = await axios.get('http://localhost:3001/api/blogs');
+    const response = await axios.get('/api/blogs');
     return response.data;
   }
 };

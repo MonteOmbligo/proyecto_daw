@@ -15,11 +15,10 @@ export default function HomePage() {
   const [serverOnline, setServerOnline] = useState(true);
   // Estado para el blog seleccionado
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
-
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        await axios.get('http://localhost:3001/api/health');
+        await axios.get('/api/health');
         setServerOnline(true);
       } catch {
         setServerOnline(false);

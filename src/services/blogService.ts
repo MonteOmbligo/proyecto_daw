@@ -20,7 +20,7 @@ export const blogService = {
    * Obtener todos los blogs
    */
   getBlogs: async () => {
-    const response = await axios.get('http://localhost:3001/api/blogs');
+    const response = await axios.get('/api/blogs');
     return response.data;
   },
 
@@ -29,7 +29,7 @@ export const blogService = {
    * @param userId ID del usuario
    */
   getBlogsByUser: async (userId: number) => {
-    const response = await axios.get(`http://localhost:3001/api/usuarios/${userId}/blogs`);
+    const response = await axios.get(`/api/usuarios/${userId}/blogs`);
     return response.data;
   },
   /**
@@ -37,7 +37,7 @@ export const blogService = {
    * @param blog Datos del nuevo blog
    */
   createBlog: async (blog: Omit<Blog, 'id'>) => {
-    const response = await axios.post('http://localhost:3001/api/blogs', blog);
+    const response = await axios.post('/api/blogs', blog);
     return response.data;
   },
 
@@ -47,7 +47,7 @@ export const blogService = {
    * @param blog Datos actualizados del blog
    */
   updateBlog: async (id: number, blog: Partial<Blog>) => {
-    const response = await axios.put(`http://localhost:3001/api/blogs/${id}`, blog);
+    const response = await axios.put(`/api/blogs/${id}`, blog);
     return response.data;
   },
 
@@ -56,18 +56,17 @@ export const blogService = {
    * @param id ID del blog a eliminar
    */
   deleteBlog: async (id: number) => {
-    const response = await axios.delete(`http://localhost:3001/api/blogs/${id}`);
+    const response = await axios.delete(`/api/blogs/${id}`);
     return response.data;
   },
-
   /**
    * Extraer el favicon de una URL
    * @param url URL del sitio web
    */
   extractFavicon: async (url: string) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/utils/extract-favicon', { url });
-      return response.data.faviconUrl;
+      const response = await axios.post('/api/utils/extract-favicon', { url });
+      return response.data.favicon || 'https://www.google.com/s2/favicons?domain=' + url;
     } catch (error) {
       console.error('Error al extraer el favicon:', error);
       // URL por defecto para favicon si falla la extracción
