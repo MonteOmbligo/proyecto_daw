@@ -1,9 +1,24 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
+// Rutas protegidas donde los usuarios deben estar autenticados
 const isProtectedRoute = createRouteMatcher(['/'])
 
+// Rutas públicas que deben ser accesibles sin autenticación
+const isPublicRoute = createRouteMatcher([
+  '/api/webhooks(.*)', 
+  '/api/update-db-structure'
+])
+
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect()
+  // Si es una ruta pública, permitir acceso sin autenticación
+  if (isPublicRoute(req)) {
+    return;
+  }
+  
+  // Si es una ruta protegida, requerir autenticación
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
 })
 
 export const config = {

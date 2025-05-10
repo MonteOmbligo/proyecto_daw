@@ -1,8 +1,8 @@
 import type { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
-import { CLERK_WEBHOOK_SIGNING_SECRET } from '@/lib/config';
-import axios from 'axios';
+import { CLERK_WEBHOOK_SIGNING_SECRET } from '@/lib/config'; // Usar el config desde lib
+import { saveUserToDB } from '@/lib/db';
 
 // This is needed to disable bodyParser
 export const config = {
@@ -10,12 +10,13 @@ export const config = {
 };
 
 // POST /api/webhooks
-export async function POST(req: Request) {
-  // Get the webhook signing secret from environment variables
+export async function POST(req: Request) {  // Get the webhook signing secret from environment variables
   const WEBHOOK_SECRET = CLERK_WEBHOOK_SIGNING_SECRET;
   
+  console.log('Webhook recibido. Secret disponible:', !!WEBHOOK_SECRET);
+  
   if (!WEBHOOK_SECRET) {
-    console.error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local');
+    console.error('Error: CLERK_WEBHOOK_SIGNING_SECRET no está definido en .env o .env.local');
     return new NextResponse('Error occurred -- no webhook secret', { status: 500 });
   }
   
@@ -63,30 +64,31 @@ export async function POST(req: Request) {
   // Get the event type
   const eventType = evt.type;
   console.log(`Received webhook with type ${eventType}`);
-
   // Handle different event types
   if (eventType === 'user.created') {
     const { id, first_name, last_name, email_addresses } = evt.data;
     const email = email_addresses?.[0]?.email_address || "";
     
-    // Call your server API to save the user
+    // Guardar usuario directamente en la base de datos usando la función saveUserToDB
     try {
-      const userData = {
-        clerk_id: id,
-        nombre: first_name || '',
-        apellido: last_name || '',
-        email: email,
-      };
+      console.log(`Guardando usuario: ID=${id}, nombre=${first_name}, email=${email}`);
       
-      console.log('Saving user to database:', userData);
+      // Usar la función saveUserToDB que conecta directamente con la base de datos
+      const result = await saveUserToDB({ 
+        id, // El clerk_id
+        name: first_name || '', 
+        email 
+      });
       
-      // You can use axios to send to your server API
-      const response = await axios.post('/api/usuarios', userData);
-      console.log('User saved successfully:', response.data);
+      if (result) {
+        console.log(`Usuario guardado exitosamente en la base de datos: ${id}`);
+      } else {
+        console.error('Error al guardar usuario en la base de datos');
+      }
     } catch (error) {
-      console.error('Error saving user to database:', error);
-      // We don't want to fail the webhook call even if DB save fails
-      // Just log the error but return success to Clerk
+      console.error('Error al guardar usuario en la base de datos:', error);
+      // No queremos que falle la llamada webhook aunque falle el guardado en BD
+      // Solo registramos el error pero devolvemos éxito a Clerk
     }
   } else if (eventType === 'user.updated') {
     // Handle user update events
