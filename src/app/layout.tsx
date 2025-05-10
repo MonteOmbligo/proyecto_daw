@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from '@clerk/nextjs';
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 import { esES } from '@clerk/localizations';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./style/globals.css";
@@ -25,14 +32,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-        <ClerkProvider localization={esES} {...(typeof window !== 'undefined' && { navigate: (to: string) => window.history.pushState(null, '', to) })}>
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider
+      localization={esES}
+      {...(typeof window !== "undefined" && {
+        navigate: (to: string) => window.history.pushState(null, "", to),
+      })}
+    >
+      <html lang="es">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <header className="flex justify-end items-center p-4 gap-4 h-12 bg-white shadow-md">
+            <div className="flex items-center gap-2">
+              <SignInButton mode="modal">
+                <button>Iniciar sesión</button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button>Registrarse</button>
+              </SignUpButton>
+            </div>
+          </header>
+
+          {children}
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
