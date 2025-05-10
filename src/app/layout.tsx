@@ -59,6 +59,12 @@ export default function RootLayout({
           </header>
 
           {children}
+
+          <footer className="flex justify-center items-center p-4 gap-4 h-12 bg-white shadow-md">
+            <p className="text-sm text-gray-500">
+              © 2099 . Todos los derechos reservados.
+            </p>
+            </footer>
         </body>
       </html>
     </ClerkProvider>
