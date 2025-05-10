@@ -77,7 +77,7 @@ export default function HomePage() {
           {/* Logo Section */}
           <div>
             <div className="mb-8 text-center font-bold text-xl">
-              <Image src="C:\Users\Juan\Pictures\ALMANSEGO MEDIA\ISOTIPO" alt="Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-2" />
+              <Image src="" alt="Logo" width={64} height={64} className="w-16 h-16 mx-auto mb-2" />
             </div>
             
             {/* Blog Management */}

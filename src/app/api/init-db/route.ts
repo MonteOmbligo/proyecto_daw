@@ -4,16 +4,16 @@ import { neon } from '@neondatabase/serverless';
 export async function GET() {
   try {
     const sql = neon(process.env.DATABASE_URL || '');
-    
-    // Crear tabla de usuarios adaptada para PostgreSQL
+      // Crear tabla de usuarios adaptada para PostgreSQL
     await sql`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
         email VARCHAR(100) NOT NULL UNIQUE,
-        contraseña VARCHAR(255) NOT NULL,
+        contraseña VARCHAR(255),
         estilo_escritura VARCHAR(100),
         api_key_llm VARCHAR(255),
+        clerk_id VARCHAR(100) UNIQUE,
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

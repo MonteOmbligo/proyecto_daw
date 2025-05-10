@@ -431,3 +431,217 @@ La migración a Vercel y la adaptación a una arquitectura serverless ha represe
 5. **Flexibilidad para desarrollo y pruebas**: La integración de ngrok proporciona un puente eficaz entre el desarrollo local y el entorno de producción.
 
 Esta migración no solo ha mejorado las características técnicas del proyecto, sino que también ha establecido una base sólida para el crecimiento futuro y la adición de nuevas funcionalidades.
+
+---
+
+[10/05/2025]
+# Implementación de Autenticación con Clerk y Sincronización con Base de Datos
+
+## Integración de Clerk como Servicio de Autenticación
+
+Para mejorar la seguridad y experiencia de usuario en la aplicación, se ha implementado Clerk como servicio de autenticación. Clerk ofrece una solución robusta y moderna para la gestión de usuarios, autenticación y autorización.
+
+### Justificación de la Elección
+
+Se seleccionó Clerk por los siguientes motivos:
+
+1. **Experiencia de usuario superior**: Proporciona flujos de autenticación intuitivos y personalizables.
+2. **Seguridad avanzada**: Implementa las mejores prácticas de seguridad, como autenticación multifactor, protección contra ataques y cifrado de datos.
+3. **Fácil integración con Next.js**: Ofrece un SDK específico para Next.js que facilita la implementación.
+4. **Soporte para múltiples métodos de autenticación**: Permite iniciar sesión con correo electrónico/contraseña, redes sociales, y otros métodos.
+5. **Internacionalización**: Incluye soporte para múltiples idiomas, incluyendo español.
+
+### Implementación Básica
+
+La implementación de Clerk en el proyecto ha seguido estos pasos:
+
+1. **Instalación de las dependencias**:
+   ```bash
+   npm install @clerk/nextjs @clerk/localizations
+   ```
+
+2. **Configuración del proveedor**: Se ha implementado el `ClerkProvider` en el archivo `layout.tsx` para envolver toda la aplicación y proporcionar el contexto de autenticación:
+
+   ```typescript
+   import { ClerkProvider } from '@clerk/nextjs';
+   import { esES } from '@clerk/localizations';
+
+   export default function RootLayout({
+     children,
+   }: Readonly<{
+     children: React.ReactNode;
+   }>) {
+     return (
+       <ClerkProvider localization={esES} {...(typeof window !== 'undefined' && { navigate: (to: string) => window.history.pushState(null, '', to) })}>
+         <html lang="en">
+           <body>
+             {children}
+           </body>
+         </html>
+       </ClerkProvider>
+     );
+   }
+   ```
+
+3. **Configuración del middleware**: Se ha creado un middleware para proteger las rutas y excluir específicamente las rutas de webhook:
+
+   ```typescript
+   import { clerkMiddleware } from '@clerk/nextjs/server';
+
+   export default clerkMiddleware();
+
+   export const config = {
+     matcher: [
+       // proteger páginas y APIs excepto la ruta de webhook
+       '/((?!_next|api/webhooks).*)',
+       '/api/(?!webhooks).*',
+     ],
+   };
+   ```
+
+## Sincronización de Usuarios con Base de Datos mediante Webhooks
+
+Para mantener sincronizada la información de usuarios entre Clerk y nuestra base de datos PostgreSQL, se ha implementado un sistema de webhooks que captura eventos de Clerk y actualiza nuestra base de datos.
+
+### Arquitectura del Sistema de Sincronización
+
+El proceso de sincronización se basa en tres componentes clave:
+
+1. **Webhook de Clerk**: Configurado para enviar eventos de usuario a nuestra aplicación.
+2. **Endpoint de Webhooks**: Implementado en nuestra aplicación para recibir y procesar los eventos de Clerk.
+3. **Funciones de Gestión de Base de Datos**: Para almacenar los datos de usuario recibidos mediante webhooks.
+
+### Implementación del Endpoint de Webhooks
+
+Se ha creado un endpoint específico para recibir los webhooks de Clerk en `src/app/api/webhooks/route.ts`:
+
+```typescript
+import type { WebhookEvent } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { Webhook } from 'svix';
+import { CLERK_WEBHOOK_SIGNING_SECRET } from '@/lib/config';
+import { saveUserToDB } from '@/lib/db';
+
+// Configuración para deshabilitar el bodyParser
+export const config = {
+  api: { bodyParser: false },
+};
+
+// Función para manejar el webhook POST
+export async function POST(req: Request) {
+  const WEBHOOK_SECRET = CLERK_WEBHOOK_SIGNING_SECRET;
+  
+  // Verificación de la firma del webhook
+  const headersList = req.headers;
+  const svix_id = headersList.get('svix-id');
+  const svix_timestamp = headersList.get('svix-timestamp');
+  const svix_signature = headersList.get('svix-signature');
+  
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new NextResponse('Error: Cabeceras svix faltantes', { status: 400 });
+  }
+
+  const payload = await req.json();
+  const body = JSON.stringify(payload);
+
+  // Verificación del evento con svix
+  let evt: WebhookEvent;
+  try {
+    evt = new Webhook(WEBHOOK_SECRET).verify(body, {
+      'svix-id': svix_id,
+      'svix-timestamp': svix_timestamp,
+      'svix-signature': svix_signature,
+    }) as WebhookEvent;
+  } catch (err) {
+    return new NextResponse('Error de verificación', { status: 400 });
+  }
+
+  // Procesamiento según el tipo de evento
+  if (evt.type === 'user.created') {
+    const { id, first_name, email_addresses } = evt.data;
+    const email = email_addresses?.[0]?.email_address || "";
+    await saveUserToDB({ id, name: first_name || undefined, email: email || undefined });
+  }
+
+  return NextResponse.json({ success: true });
+}
+```
+
+### Función para Guardar Usuarios en la Base de Datos
+
+Se ha implementado una función `saveUserToDB` en `src/lib/db.ts` para guardar los datos de usuario recibidos desde Clerk:
+
+```typescript
+export async function saveUserToDB({ 
+  id, 
+  name, 
+  email 
+}: { 
+  id: string, 
+  name?: string, 
+  email?: string 
+}): Promise<boolean> {
+  try {
+    // Comprobamos si el usuario ya existe por su id de Clerk
+    const existingUsers = await sql`
+      SELECT * FROM usuarios WHERE clerk_id = ${id}
+    `;
+    
+    if (existingUsers.length > 0) {
+      console.log(`Usuario con clerk_id ${id} ya existe en la base de datos`);
+      return true;
+    }
+    
+    // Creamos el nuevo usuario
+    await sql`
+      INSERT INTO usuarios 
+        (nombre, email, clerk_id) 
+      VALUES 
+        (${name || 'Usuario'}, ${email || ''}, ${id})
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error al guardar usuario de Clerk en la base de datos:', error);
+    return false;
+  }
+}
+```
+
+### Modificación del Esquema de la Base de Datos
+
+Para soportar la integración con Clerk, se ha modificado el esquema de la tabla `usuarios` añadiendo un campo `clerk_id` que almacena el identificador único del usuario en Clerk:
+
+```sql
+CREATE TABLE IF NOT EXISTS usuarios (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  contraseña VARCHAR(255),
+  estilo_escritura VARCHAR(100),
+  api_key_llm VARCHAR(255),
+  clerk_id VARCHAR(100) UNIQUE,
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+```
+
+El campo `contraseña` se ha hecho opcional, ya que ahora la autenticación se gestiona a través de Clerk.
+
+## Consideraciones de Seguridad
+
+Para garantizar la seguridad de la implementación, se han tomado las siguientes medidas:
+
+1. **Secretos de Webhook**: El secreto de firma de webhooks se almacena como variable de entorno (`CLERK_WEBHOOK_SECRET`) y nunca se expone en el código.
+2. **Verificación criptográfica**: Se utiliza la biblioteca `svix` para verificar criptográficamente que los webhooks provienen realmente de Clerk.
+3. **Rutas públicas limitadas**: Solo la ruta de webhooks está excluida de la autenticación para permitir que Clerk envíe eventos sin autenticarse.
+
+## Referencias
+
+La implementación se ha basado en la documentación oficial de Clerk y Neon:
+
+1. [Documentación de Clerk para Next.js](https://clerk.com/docs/quickstarts/nextjs)
+2. [Sincronización de datos con webhooks en Clerk](https://clerk.com/docs/users/sync-data)
+3. [Documentación de NeonDB para serverless](https://neon.tech/docs/serverless/serverless-driver)
+
+Esta integración proporciona una base sólida para la gestión de usuarios en la aplicación, combinando la potencia de Clerk para la autenticación con nuestra propia base de datos para el almacenamiento de datos específicos de la aplicación.

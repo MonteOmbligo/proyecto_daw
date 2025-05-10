@@ -5,9 +5,10 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
-  contraseña: string;
+  contraseña?: string;
   estilo_escritura?: string;
   api_key_llm?: string;
+  clerk_id?: string;
   fecha_creacion?: string;
   fecha_actualizacion?: string;
 }
@@ -164,5 +165,41 @@ export const userService = {
       console.error('Error al obtener todos los usuarios:', error);
       return [];
     }
+  }
+};
+
+// Función para guardar un usuario de Clerk en la base de datos
+export async function saveUserToDB({ 
+  id, 
+  name, 
+  email 
+}: { 
+  id: string, 
+  name?: string, 
+  email?: string 
+}): Promise<boolean> {
+  try {
+    // Comprobamos si el usuario ya existe por su id de Clerk
+    const existingUsers = await sql`
+      SELECT * FROM usuarios WHERE clerk_id = ${id}
+    `;
+    
+    if (existingUsers.length > 0) {
+      console.log(`Usuario con clerk_id ${id} ya existe en la base de datos`);
+      return true;
+    }
+    
+    // Creamos el nuevo usuario
+    await sql`
+      INSERT INTO usuarios 
+        (nombre, email, clerk_id) 
+      VALUES 
+        (${name || 'Usuario'}, ${email || ''}, ${id})
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error al guardar usuario de Clerk en la base de datos:', error);
+    return false;
   }
 };
