@@ -66,7 +66,7 @@ export async function POST(req: Request) {  // Get the webhook signing secret fr
   console.log(`Received webhook with type ${eventType}`);
   // Handle different event types
   if (eventType === 'user.created') {
-    const { id, first_name, last_name, email_addresses } = evt.data;
+    const { id, first_name, email_addresses } = evt.data;
     const email = email_addresses?.[0]?.email_address || "";
     
     // Guardar usuario directamente en la base de datos usando la función saveUserToDB

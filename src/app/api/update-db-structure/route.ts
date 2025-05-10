@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
 // Función para actualizar la estructura de la base de datos
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const sql = neon(process.env.DATABASE_URL || '');
 
